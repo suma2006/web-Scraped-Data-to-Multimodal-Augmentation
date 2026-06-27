@@ -1,91 +1,81 @@
-# End-to-End NLP Pipeline: Web-Scraped Data to Multimodal Augmentation
+# Web-Scraped Data to Multimodal Augmentation
 
-> **Course Project** — Software Tools & Techniques for AI | IIT Gandhinagar
+Course project for Software Tools & Techniques for AI at IIT Gandhinagar.
 
----
-
-## Overview
-
-This repository contains two interconnected assignments that together form a complete NLP data engineering pipeline — starting from raw web scraping, through rigorous data validation and API enrichment, all the way to multi-modal text augmentation with LLMs and audio feature extraction.
+This repo has two assignments that I worked on back-to-back — the first one is about pulling real data from the web and cleaning it properly, and the third one takes that idea further into text augmentation and audio processing. Together they cover a decent chunk of what a real NLP data pipeline looks like.
 
 ---
 
-## Project Structure
+## What's inside
 
 ```
-├── Assignment1_Web_Scraping_Pipeline.ipynb       # Web scraping, Pydantic validation, API enrichment
-└── Assignment3_Multimodal_Sentiment_Engine.ipynb # Text augmentation, LLM synthesis, audio pipeline
+Assignment1_Web_Scraping_Pipeline.ipynb       — scraping, validation, API enrichment
+Assignment3_Multimodal_Sentiment_Engine.ipynb — augmentation, LLM synthesis, audio pipeline
 ```
 
 ---
 
-## Assignment 1 — Automated Data Pipeline: Web Scraping to Enriched Dataset
+## Assignment 1 — Box Office Bombs: Scraping to Dataset
 
-### What it does
-An end-to-end automated data pipeline built around Wikipedia's *List of Biggest Box-Office Bombs*:
+The goal was to scrape Wikipedia's list of biggest box-office bombs, clean the mess, and enrich it with external API data.
 
-- **Web Scraping**: Scraped **139 records** from Wikipedia using `BeautifulSoup`, handling nested table headers, footnote symbols (`§`, `†`), and raw budget/loss strings like `"$100–160M"`
-- **Pydantic Validation**: Cleaned and validated all fields using `Pydantic` schemas — normalizing currency ranges, stripping malformed strings, and enforcing type constraints
-- **OMDb API Enrichment**: Enriched every record via the OMDb REST API (genre, director, ratings), with graceful handling of missing/failed responses
-- **Cross-Source Consistency Check**: Reconciled scraped vs API-sourced fields, achieving **137/139 (98.6%) verified matches**
-- **Categorized Dataset**: Produced an analysis-ready, deduplicated dataset with categorized loss tiers
+Wikipedia tables are never clean — this one had nested headers, footnote symbols stuck to film titles (like `§` and `†`), and budget fields written as ranges (`$100–160M`). I scraped 139 records using BeautifulSoup, then wrote Pydantic schemas to validate and normalize every field.
 
-### Key Libraries
-`requests` · `BeautifulSoup` · `pydantic` · `pandas` · `re`
+After cleaning, I hit the OMDb API to pull in extra details (genre, director, ratings) for each film, with proper error handling for the ones that didn't return anything useful. The last step was a cross-source consistency check — comparing what I scraped vs what the API returned. 137 out of 139 matched up (98.6%), and the final dataset came out categorized and ready for analysis.
+
+**Libraries used:** `requests`, `beautifulsoup4`, `pydantic`, `pandas`
 
 ---
 
-## Assignment 3 — The Multimodal Sentiment Engine
+## Assignment 3 — Multimodal Sentiment Engine
 
-### What it does
-A multi-stage data augmentation and validation pipeline for a sentiment analysis dataset:
+This one was more involved. The task was to take a small sentiment dataset and expand it using multiple augmentation techniques, then validate the quality of what was generated — including an audio pipeline at the end.
 
-- **Data Consolidation**: Merged three CSV sources (`gold_standard`, `weak_labels`, `llm_labels`), filtered by TF-IDF baseline confidence ≥ 0.65, deduplicated, and handled class imbalance
-- **Classical Augmentation**: Synonym replacement using WordNet + back-translation pipeline
-- **LLM-Based Synthetic Data Generation**: Few-shot prompted via the **OpenRouter API** to generate high-quality synthetic reviews; filtered low-quality samples using **Jaccard similarity** and **Self-BLEU** diversity scoring
-- **Multilingual Validation**: English → Hindi → English back-translation via `deep-translator`, scored with **BLEU**
-- **Multimodal Audio Pipeline**:
-  - Text-to-speech via `gTTS`
-  - MFCC and spectral feature extraction with **Librosa**
-  - ASR transcription validated via **OpenAI Whisper** at **96.7% pass rate / 0.012 WER**
-- **Benchmarking**: Consolidated all sources into a final augmented training set and benchmarked accuracy gains over a TF-IDF + Logistic Regression baseline
+I started by merging three CSVs (gold standard labels, weak labels, LLM-labeled data), ran a TF-IDF baseline to filter out low-confidence samples, and deduplicated everything into a consolidated base.
 
-### Key Libraries
-`nltk` · `deep-translator` · `gTTS` · `librosa` · `openai-whisper` · `scikit-learn` · `pandas` · `openrouter API`
+For augmentation:
+- Classical methods: synonym replacement via WordNet, back-translation
+- LLM-based: few-shot prompting through the OpenRouter API to generate synthetic reviews. I filtered these using Jaccard similarity and Self-BLEU so only diverse, non-repetitive samples made it in
 
----
+For multilingual validation, I ran English → Hindi → English back-translation using `deep-translator` and scored the round-trip with BLEU.
 
-## Results Summary
+The audio pipeline converted text to speech with gTTS, extracted MFCC and spectral features using Librosa, then passed the audio through OpenAI Whisper for ASR validation. Whisper passed 96.7% of samples with a WER of 0.012.
 
-| Pipeline Stage | Metric | Result |
-|---|---|---|
-| Web Scraping | Records scraped | 139 |
-| Consistency Check | Verified matches | 137/139 (98.6%) |
-| Whisper ASR Validation | Pass rate | 96.7% |
-| Whisper ASR Validation | Word Error Rate (WER) | 0.012 |
+At the end, I compared accuracy on the augmented training set vs the original baseline to measure whether the augmentation actually helped.
+
+**Libraries used:** `nltk`, `deep-translator`, `gTTS`, `librosa`, `openai-whisper`, `scikit-learn`, `pandas`, OpenRouter API
 
 ---
 
-## How to Run
+## Numbers
 
-### Assignment 1
+| What | Result |
+|---|---|
+| Records scraped (Assignment 1) | 139 |
+| Cross-source consistency | 137/139 — 98.6% |
+| Whisper ASR pass rate | 96.7% |
+| Word Error Rate (WER) | 0.012 |
+
+---
+
+## Running locally
+
+**Assignment 1**
 ```bash
 pip install requests beautifulsoup4 pydantic pandas
 jupyter notebook Assignment1_Web_Scraping_Pipeline.ipynb
 ```
 
-### Assignment 3
+**Assignment 3**
 ```bash
-pip install -r requirements.txt   # see notebook setup cell
+# follow the setup cell at the top of the notebook
+pip install -r requirements.txt
 jupyter notebook Assignment3_Multimodal_Sentiment_Engine.ipynb
 ```
 
-> **Note:** Assignment 3 requires API keys for OpenRouter (LLM augmentation). Set them as environment variables in a `.env` file before running.
+For Assignment 3, you'll need an OpenRouter API key set in a `.env` file for the LLM augmentation step.
 
 ---
 
-## Author
-
-**Manemoni Sumanjali**  
-B.Tech, Artificial Intelligence | IIT Gandhinagar  
+Manemoni Sumanjali — B.Tech AI, IIT Gandhinagar  
 [LinkedIn](https://linkedin.com/in/manemoni-sumanjali) · [GitHub](https://github.com/suma2006)
